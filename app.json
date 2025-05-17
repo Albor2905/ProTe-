@@ -19,10 +19,17 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.ivhanfch.ProTec"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1fd6cb39-2fec-4c1a-8f66-4cddee9808c6"
+      }
+    },
+    "owner": "ivhanfch3"
   }
 }
