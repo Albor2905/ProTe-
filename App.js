@@ -32,6 +32,8 @@ const LedIndicator = React.memo(({ status }) => {
     0: { color: 'gray', label: 'Apagado' },
     1: { color: 'limegreen', label: 'Encendido' },
     2: { color: 'red', label: 'Error' },
+  
+    
     3: { color: 'yellow', label: 'Advertencia' },
     default: { color: 'gray', label: 'Desconocido' }
   };
@@ -247,14 +249,12 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   logo: {
-    width: 50,
-    height: 50,
-    marginBottom: 10,
-    tintColor: 'white',
+    width: 150,
+    height: 150,
   },
   title: {
     color: 'white',
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
     letterSpacing: 1,
   },

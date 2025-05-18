@@ -1,19 +1,74 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * const {onCall} = require("firebase-functions/v2/https");
- * const {onDocumentWritten} = require("firebase-functions/v2/firestore");
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
+import { initializeApp } from 'firebase-admin/app';
+import { getDatabase } from 'firebase-admin/database';
+import { Expo } from 'expo-server-sdk';
+import { onValueWritten } from 'firebase-functions/v2/database';
+import { onValue } from 'firebase/database';
 
-const {onRequest} = require("firebase-functions/v2/https");
-const logger = require("firebase-functions/logger");
+const app = initializeApp();
+const expo = new Expo();
 
-// Create and deploy your first functions
-// https://firebase.google.com/docs/functions/get-started
+export const enviarNotificacionSiEstado2 = onValueWritten(
+  { ref: 'Estado/led1' },
+  async (event) => {
+    const afterData = event.data.after.val();
+    
+    if (afterData !== 2) return;
 
-// exports.helloWorld = onRequest((request, response) => {
-//   logger.info("Hello logs!", {structuredData: true});
-//   response.send("Hello from Firebase!");
-// });
+    const db = getDatabase();
+    const usersSnapshot = await db.ref('UsuariosProTec').once('value');
+    const users = usersSnapshot.val() || {};
+
+    const messages = [];
+    const invalidTokens = [];
+
+    // Prepara mensajes
+    for (const [userId, userData] of Object.entries(users)) {
+      const expoToken = userData?.expoToken;
+      if (!expoToken || !Expo.isExpoPushToken(expoToken)) continue;
+
+      messages.push({
+        to: expoToken,
+        sound: 'default',
+        title: '⚠️ Alerta',
+        body: '¡Estado crítico detectado!',
+        data: { userId } // Datos adicionales
+      });
+    }
+
+    // Envía en chunks
+    const chunks = expo.chunkPushNotifications(messages);
+    
+    try {
+      for (const chunk of chunks) {
+        const receipts = await expo.sendPushNotificationsAsync(chunk);
+        // Procesa receipts para detectar tokens inválidos
+        receipts.forEach(receipt => {
+          if (receipt.status === 'error' && receipt.details?.error === 'DeviceNotRegistered') {
+            invalidTokens.push(receipt.details.expoPushToken);
+          }
+        });
+      }
+
+      // Limpia tokens inválidos
+      await Promise.all(
+        invalidTokens.map(token => 
+          db.ref('UsuariosProTec')
+            .orderByChild('expoToken')
+            .equalTo(token)
+            .once('value')
+            .then(snapshot => {
+              const updates = {};
+              snapshot.forEach(child => {
+                updates[`${child.key}/expoToken`] = null;
+              });
+              return db.ref().update(updates);
+            })
+        )
+      );
+
+      console.log(`Notificaciones enviadas: ${messages.length}`);
+    } catch (error) {
+      console.error('Error crítico:', error);
+    }
+  }
+);

@@ -4,11 +4,11 @@
     "slug": "ProTec",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/favicon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/favicon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -28,6 +28,9 @@
     "extra": {
       "eas": {
         "projectId": "1fd6cb39-2fec-4c1a-8f66-4cddee9808c6"
+      },
+      "firebase": {
+        "senderId": "478449984037"
       }
     },
     "owner": "ivhanfch3"
