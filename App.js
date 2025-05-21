@@ -31,9 +31,7 @@ const LedIndicator = React.memo(({ status }) => {
   const statusConfig = {
     0: { color: 'gray', label: 'Apagado' },
     1: { color: 'limegreen', label: 'Encendido' },
-    2: { color: 'red', label: 'Error' },
-  
-    
+    2: { color: 'red', label: 'Accidente' },
     3: { color: 'yellow', label: 'Advertencia' },
     default: { color: 'gray', label: 'Desconocido' }
   };
@@ -53,6 +51,8 @@ export default function App() {
   const [expoPushToken, setExpoPushToken] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [panico, setPanico] = useState(0);
+
 
   // Registro para notificaciones push mejorado
   useEffect(() => {
@@ -132,6 +132,38 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+
+
+  const showNotification = async () => {
+  await Notifications.scheduleNotificationAsync({
+    content: {
+      title: '🚨 Botón de Pánico Activado',
+      body: '¡Atiende la emergencia del sistema!',
+      sound: true,
+      priority: Notifications.AndroidNotificationPriority.MAX,
+      vibrate: [0, 250, 250, 250],
+      data: { tipo: 'panico' }
+    },
+    trigger: null
+  });
+};
+  //boton-de-panico
+  useEffect(() => {
+  const panicoRef = ref(database, 'estado/BotonPanico');
+  const unsubscribe = onValue(panicoRef, (snapshot) => {
+    const valor = snapshot.val();
+    setPanico(valor);
+
+    if (valor === 1) {
+      
+      showNotification();
+      Vibration.vibrate([0, 500, 500, 500]);
+    }
+  });
+
+  return () => unsubscribe();
+}, []);
+
   // Efecto para alertas y vibración
   useEffect(() => {
     if (ledStatus === 2) {
@@ -146,8 +178,8 @@ export default function App() {
       // Notificación local avanzada
       Notifications.scheduleNotificationAsync({
         content: {
-          title: "⚠️ ¡Alerta Crítica!",
-          body: "¡El sensor ha detectado una condición de peligro!",
+          title: "⚠️ ¡Alerta!",
+          body: "¡El sensor ha detectado peligro!",
           sound: true,
           priority: Notifications.AndroidNotificationPriority.MAX,
           vibrate: [0, 250, 250, 250],
@@ -191,7 +223,10 @@ export default function App() {
 
   // Renderizado principal
   return (
-    <View style={styles.container}>
+    <View style={[
+  styles.container,
+  panico === 1 && { backgroundColor: '#fa0202' } 
+]}>
       <View style={styles.header}>
         <Image 
           source={require('./assets/favicon.png')} 
@@ -209,12 +244,13 @@ export default function App() {
         <View style={styles.grid}>
           {Array.from({ length: 6 }).map((_, index) => (
             <View 
-              key={`sensor-${index}`}
-              style={[
-                styles.sensorCard,
-                index === 0 && ledStatus === 2 && styles.emergencyCard
-              ]}
-            >
+  key={`sensor-${index}`}
+  style={[
+    styles.sensorCard,
+    index === 0 && ledStatus === 2 && styles.emergencyCard,
+    index === 0 && panico === 1 && styles.panicoCard
+  ]}
+>
               <Text style={styles.sensorTitle}>Máquina #{index + 1}</Text>
               <Text style={styles.sensorStatus}>Estado actual:</Text>
               <LedIndicator status={index === 0 ? ledStatus : 0} />
@@ -348,4 +384,14 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 5,
   },
+// Estilo para el apartado de panico
+  panicoCard: {
+  backgroundColor: '#850000',
+  borderColor: '#ff0000',
+  borderWidth: 2,
+  transform: [{ scale: 1.05 }],
+  shadowColor: 'red',
+  shadowOpacity: 0.8,
+  shadowRadius: 6,
+},
 });
